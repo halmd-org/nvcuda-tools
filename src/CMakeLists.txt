@@ -17,10 +17,18 @@ set_target_properties(libnvlock PROPERTIES
   PREFIX ""
 )
 
+add_executable(cufree
+  cufree.c
+)
+target_link_libraries(cufree
+  ${CUDA_LIBRARY}
+)
+
 install(
   TARGETS
     libnvlock
     nvlock
+    cufree
   RUNTIME
     DESTINATION bin
   LIBRARY

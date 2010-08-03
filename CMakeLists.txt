@@ -1,23 +1,11 @@
-project(nvlock)
+project(nvcuda-tools)
 
 cmake_minimum_required(VERSION 2.6)
 
-add_executable(nvlock
-  wrapper.c
-  )
-install(TARGETS nvlock
-  RUNTIME DESTINATION bin
-  )
+find_package(CUDA QUIET REQUIRED)
 
-add_library(libnvlock SHARED
-  nvlock.c
-  )
-target_link_libraries(libnvlock
-  dl
-  )
-set_target_properties(libnvlock PROPERTIES
-  PREFIX ""
-  )
-install(TARGETS libnvlock
-  LIBRARY DESTINATION lib
-  )
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release")
+endif(NOT CMAKE_BUILD_TYPE)
+
+add_subdirectory(src)

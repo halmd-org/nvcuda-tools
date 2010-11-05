@@ -1,0 +1,103 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# compute device occupancy of a CUDA kernel
+#
+# Copyright © 2010  Felix Höfling
+#
+# This tool is free software and released under the terms of
+# the GNU General Public License Version 3, please refer to
+# <http://www.gnu.org/licenses/> for details.
+
+import pycuda.driver as cuda
+import pycuda.tools as tools
+import argparse
+from math import floor, log
+
+def main():
+    # parse command line arguments
+    args = parse_args()
+
+    cuda.init()
+    dev = args.device and cuda.Device(args.device) or tools.get_default_device()
+    specs = tools.DeviceData(dev)
+
+    if args.verbose:
+        print 'CUDA device: %s\n' % dev.name()
+        print 'Specifications:'
+        print '  Maximum number of blocks per multiprocessor: %d' % specs.thread_blocks_per_mp
+        print '  Maximum number of threads per block: %d' % specs.max_threads
+        print '  Warp size: %d' % specs.warp_size
+        print '  Active warps per multiprocessor: %d' % specs.warps_per_mp
+        print '  Number of registers: %d' % specs.registers
+        print '  Shared memory: %d bytes' % specs.shared_memory
+        print '  Granularity of shared memory: %d threads' % specs.smem_granularity
+        print
+
+    if args.threads > specs.max_threads:
+        raise SystemExit('Thread count per block (%d) exceeds maximum value (%d).' \
+                         % (args.threads, specs.max_threads))
+
+    if args.registers * args.threads > specs.registers:
+        raise SystemExit('Total register usage (%d) exceeds maximum value (%d).' \
+                         % (args.registers * args.threads, specs.registers))
+
+    if args.smem > specs.shared_memory:
+        raise SystemExit('Shared memory usage (%d bytes) exceeds maximum value (%d bytes).' \
+                         % (args.smem, specs.shared_memory))
+
+    print 'Analyse kernel of %d threads' % args.threads
+    print 'shared memory usage: %d bytes' % args.smem
+    print 'register usage: %d' % args.registers
+    print
+
+    occupancy = tools.OccupancyRecord(specs, args.threads, args.smem, args.registers)
+    print 'Active blocks per multiprocessor: %d' % occupancy.tb_per_mp
+    print 'Active warps per multiprocessor: %d' % occupancy.warps_per_mp
+    print 'Occupancy of multiprocessor: %g' % occupancy.occupancy
+    if occupancy.occupancy < 1:
+        reason = {
+            'device': 'size of device'
+          , 'warps': 'maximum number of active warps'
+          , 'regs': 'number of registers'
+          , 'smem': 'size of shared memory'
+        }
+        print '\nLimitation: %s' % reason[occupancy.limited_by]
+
+        if args.hint:
+            if occupancy.limited_by == 'device':
+                print 'Hint: increase the number of threads per block'
+
+            if occupancy.limited_by == 'warps':
+                # the number of warps per block should be a power of 2'
+                warps_per_tb = pow(2, floor(log(args.threads / specs.warp_size, 2)))
+                threads = warps_per_tb * specs.warp_size
+                print 'Hint: decrease the number of threads per block to %d' % threads
+
+            if occupancy.limited_by == 'regs':
+                regs = specs.registers / (specs.warps_per_mp * specs.warp_size)
+                print 'Hint: reduce register usage to %d' % regs
+
+            if occupancy.limited_by == 'smem':
+                smem = specs.shared_memory / (specs.thread_blocks_per_mp)
+                print 'Hint: reduce shared memory usage to %d bytes' % smem
+
+def parse_args():
+    parser = argparse.ArgumentParser(prog='nvcuda-occupancy')
+    parser.add_argument('--threads', '-t', required=True, type=int, help='threads per block')
+    parser.add_argument('--registers', '-r', type=int, help='register usage')
+    parser.add_argument('--smem', '-s', type=int, help='shared memory usage (bytes)')
+    parser.add_argument('--device', metavar='N', type=int, help='CUDA device number')
+    parser.add_argument('--no-hint', dest='hint', action='store_false',
+                        help='suppress tuning hints')
+    parser.add_argument('--verbose', '-v', action='store_true', help='be verbose')
+    parser.set_defaults(
+        registers=0
+      , smem=0
+      , verbose=False
+      , hint=True
+    )
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    main()

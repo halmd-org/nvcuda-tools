@@ -8,4 +8,8 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release")
 endif(NOT CMAKE_BUILD_TYPE)
 
-add_subdirectory(src)
+include_directories(
+  ${CUDA_INCLUDE_DIR}
+)
+add_subdirectory(cufree)
+add_subdirectory(nvlock)

@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# reformat output of the nvidia-smi tool
+#
+# Copyright © 2011   Felix Höfling
+#
+# This tool is free software and released under the terms of
+# the GNU General Public License Version 3, please refer to
+# <http://www.gnu.org/licenses/> for details.
+
+from subprocess import Popen, PIPE
+import re
+
+# inspired by http://stackoverflow.com/questions/1361373/match-multiple-patterns-in-a-multiline-string
+expr = re.compile(r'''
+        ^                     # start of any line (with re.MULTILINE enabled)
+        GPU\s(?P<id>[0-9]+):  # literal "GPU" followed by a space and a string of one or more digits
+        .*?                   # next part
+        Product.Name\s*:\s    # "Product Name", some spaces, a colon, and a space
+        (?P<name>[^\n]*)      # match until the end of the line
+        .*?                   # next part
+        Temperature\s*:\s     # "Temperature", some spaces, a colon, and a space
+        (?P<temp>[^\n]*)      # match until the end of the line
+        .*?                   # next part
+        Fan.Speed\s*:\s       # "Fan Speed", some spaces, a colon, and a space
+        (?P<fan>[^\n]*)       # match until the end of the line
+        .*?                   # next part
+        Utilization\s*        # "Utilization" and some spaces (including newline)
+        GPU\s*:\s             # "GPU", some spaces, a colon, and a space
+        (?P<gpu>[^\n]*)       # match until the end of the line
+        \s*                   # some spaces (including newline)
+        Memory\s*:\s          # "Memory", some spaces, a colon, and a space
+        (?P<mem>[^\n]*)       # match until the end of the line
+        ''', re.MULTILINE | re.DOTALL | re.VERBOSE)
+
+# grab output of nvidia-smi tool
+nvsmi = Popen(['nvidia-smi', '-a'], stdout=PIPE).communicate()[0]
+
+# print header
+print '''\
+ID  Name            Utilization     Temperature     Fan Speed
+                    GPU   Memory'''
+
+# parse output and print
+for m in expr.finditer(nvsmi):
+    print '{id:4s}{name:16s}{gpu:8s}{mem:8s}{temp:16s}{fan:16s}'.format(**m.groupdict())
+

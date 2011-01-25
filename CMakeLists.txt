@@ -14,3 +14,4 @@ include_directories(
 add_subdirectory(cufree)
 add_subdirectory(nvlock)
 add_subdirectory(nvcuda-occupancy)
+add_subdirectory(nvtop)

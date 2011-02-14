@@ -25,7 +25,7 @@ int cufree(int d)
     CUcontext ctx;
     CUdevice dev;
     CUresult err;
-    unsigned int free = 0, total = 0;
+    size_t free = 0, total = 0;
 
     if (CUDA_SUCCESS != cuDeviceGet(&dev, d)) {
 	fprintf(stderr, "cufree: failed to initialize the CUDA driver API\n", d);

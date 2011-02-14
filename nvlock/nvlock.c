@@ -23,6 +23,10 @@
 #include <stdlib.h>
 #include <sys/file.h>
 
+// http://gcc.gnu.org/onlinedocs/cpp/Stringification.html
+#define xstr(s) str(s)
+#define str(s) #s
+
 #define NVIDIA_DEVICE_FILENAME "/dev/nvidia%d"
 
 static CUresult (*_cuCtxCreate)(CUcontext *, unsigned int, CUdevice) = 0;
@@ -41,7 +45,8 @@ CUresult cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev)
 	if (!handle) {
 	    return CUDA_ERROR_UNKNOWN;
 	}
-	_cuCtxCreate = dlsym(handle, "cuCtxCreate");
+        // stringify: CUDA >= 3.2 defines part of its API with macros
+	_cuCtxCreate = dlsym(handle, xstr(cuCtxCreate));
 	if (!_cuCtxCreate) {
 	    return CUDA_ERROR_UNKNOWN;
 	}
@@ -79,7 +84,8 @@ CUresult cuCtxPopCurrent(CUcontext *pctx)
 	if (!handle) {
 	    return CUDA_ERROR_UNKNOWN;
 	}
-	_cuCtxPopCurrent = dlsym(handle, "cuCtxPopCurrent");
+        // stringify: CUDA >= 3.2 defines part of its API with macros
+	_cuCtxPopCurrent = dlsym(handle, xstr(cuCtxPopCurrent));
 	if (!_cuCtxPopCurrent) {
 	    return CUDA_ERROR_UNKNOWN;
 	}
@@ -108,7 +114,8 @@ CUresult cuCtxPushCurrent(CUcontext ctx)
 	if (!handle) {
 	    return CUDA_ERROR_UNKNOWN;
 	}
-	_cuCtxPushCurrent = dlsym(handle, "cuCtxPushCurrent");
+        // stringify: CUDA >= 3.2 defines part of its API with macros
+	_cuCtxPushCurrent = dlsym(handle, xstr(cuCtxPushCurrent));
 	if (!_cuCtxPushCurrent) {
 	    return CUDA_ERROR_UNKNOWN;
 	}

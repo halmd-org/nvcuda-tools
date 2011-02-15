@@ -20,12 +20,18 @@
 #include <cuda.h>
 #include <stdio.h>
 
+#if (CUDA_VERSION >= 3020)
+typedef size_t size_type;
+#else
+typedef unsigned int size_type;
+#endif
+
 int cufree(int d)
 {
     CUcontext ctx;
     CUdevice dev;
     CUresult err;
-    size_t free = 0, total = 0;
+    size_type free = 0, total = 0;
 
     if (CUDA_SUCCESS != cuDeviceGet(&dev, d)) {
 	fprintf(stderr, "cufree: failed to initialize the CUDA driver API\n", d);

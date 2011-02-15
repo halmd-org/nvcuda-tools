@@ -22,8 +22,10 @@
 
 #if (CUDA_VERSION >= 3020)
 typedef size_t size_type;
+# define SIZE "zd"
 #else
 typedef unsigned int size_type;
+# define SIZE "d"
 #endif
 
 int cufree(int d)
@@ -51,7 +53,7 @@ int cufree(int d)
 	fprintf(stderr, "cufree: failed to detach CUDA context for device %d: %d\n", d, err);
 	return 1;
     }
-    printf("Device %d: %8d   %8d   %8d\n", d, total / 1024, (total - free) / 1024, free / 1024);
+    printf("Device %d: %8" SIZE "   %8" SIZE "   %8" SIZE "\n", d, total / 1024, (total - free) / 1024, free / 1024);
     return 0;
 }
 

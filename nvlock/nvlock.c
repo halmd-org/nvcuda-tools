@@ -34,6 +34,8 @@ static CUresult (*_cuCtxPopCurrent)(CUcontext *) = 0;
 static CUresult (*_cuCtxPushCurrent)(CUcontext) = 0;
 static int fd = -1;
 
+#define LOG_ERROR(fmt, args...) fprintf(stderr, "nvlock: " fmt "\n", ## args)
+
 CUresult cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev)
 {
     void *handle;
@@ -43,14 +45,17 @@ CUresult cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev)
     if (!_cuCtxCreate) {
 	handle = dlopen("libcuda.so", RTLD_GLOBAL | RTLD_NOW);
 	if (!handle) {
+	    LOG_ERROR("failed to load libcuda.so");
 	    return CUDA_ERROR_UNKNOWN;
 	}
         // stringify: CUDA >= 3.2 defines part of its API with macros
 	_cuCtxCreate = dlsym(handle, xstr(cuCtxCreate));
 	if (!_cuCtxCreate) {
+	    LOG_ERROR("failed to load symbol " xstr(cuCtxCreate));
 	    return CUDA_ERROR_UNKNOWN;
 	}
 	if (dlclose(handle)) {
+	    LOG_ERROR("failed to unload libcuda.so");
 	    return CUDA_ERROR_UNKNOWN;
 	}
     }
@@ -62,6 +67,7 @@ CUresult cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev)
 	fd = -1;
     }
     if (-1 == (fd = open(fn, O_RDWR))) {
+	LOG_ERROR("failed to open CUDA device in read-write mode: %s", fn);
 	return CUDA_ERROR_UNKNOWN;
     }
     if (-1 == flock(fd, LOCK_EX | LOCK_NB)) {
@@ -82,14 +88,17 @@ CUresult cuCtxPopCurrent(CUcontext *pctx)
     if (!_cuCtxPopCurrent) {
 	handle = dlopen("libcuda.so", RTLD_GLOBAL | RTLD_NOW);
 	if (!handle) {
+	    LOG_ERROR("failed to load libcuda.so");
 	    return CUDA_ERROR_UNKNOWN;
 	}
         // stringify: CUDA >= 3.2 defines part of its API with macros
 	_cuCtxPopCurrent = dlsym(handle, xstr(cuCtxPopCurrent));
 	if (!_cuCtxPopCurrent) {
+	    LOG_ERROR("failed to load symbol " xstr(cuCtxPopCurrent));
 	    return CUDA_ERROR_UNKNOWN;
 	}
 	if (dlclose(handle)) {
+	    LOG_ERROR("failed to unload libcuda.so");
 	    return CUDA_ERROR_UNKNOWN;
 	}
     }
@@ -112,14 +121,17 @@ CUresult cuCtxPushCurrent(CUcontext ctx)
     if (!_cuCtxPushCurrent) {
 	handle = dlopen("libcuda.so", RTLD_GLOBAL | RTLD_NOW);
 	if (!handle) {
+	    LOG_ERROR("failed to load libcuda.so");
 	    return CUDA_ERROR_UNKNOWN;
 	}
         // stringify: CUDA >= 3.2 defines part of its API with macros
 	_cuCtxPushCurrent = dlsym(handle, xstr(cuCtxPushCurrent));
 	if (!_cuCtxPushCurrent) {
+	    LOG_ERROR("failed to load symbol " xstr(cuCtxPopCurrent));
 	    return CUDA_ERROR_UNKNOWN;
 	}
 	if (dlclose(handle)) {
+	    LOG_ERROR("failed to unload libcuda.so");
 	    return CUDA_ERROR_UNKNOWN;
 	}
     }

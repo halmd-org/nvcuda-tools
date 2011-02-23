@@ -34,6 +34,24 @@ expr = re.compile(r'''
         (?P<mem>[^\n]*)       # match until the end of the line
         ''', re.MULTILINE | re.DOTALL | re.VERBOSE)
 
+expr2 = re.compile(r'''
+        ^\s*                  # start of any line (with re.MULTILINE enabled)
+        GPU\s(?P<id>[0-9]+):  # literal "GPU" followed by a space and a string of one or more digits
+        .*?                   # next part
+        Product.Name\s*:\s    # "Product Name", some spaces, a colon, and a space
+        (?P<name>[^\n]*)      # match until the end of the line
+        .*?                   # next part
+        Temperature\s*:\s     # "Temperature", some spaces, a colon, and a space
+        (?P<temp>[^\n]*)      # match until the end of the line
+        .*?                   # next part
+        Utilization\s*:\s*    # "Utilization:" and some spaces (including newline)
+        GPU\s*:\s             # "GPU", some spaces, a colon, and a space
+        (?P<gpu>[^\n]*)       # match until the end of the line
+        \s*                   # some spaces (including newline)
+        Memory\s*:\s          # "Memory", some spaces, a colon, and a space
+        (?P<mem>[^\n]*)       # match until the end of the line
+        ''', re.MULTILINE | re.DOTALL | re.VERBOSE)
+
 # grab output of nvidia-smi tool
 nvsmi = Popen(['nvidia-smi', '-a'], stdout=PIPE).communicate()[0]
 
@@ -46,3 +64,8 @@ ID  Name            Utilization     Temperature     Fan Speed
 for m in expr.finditer(nvsmi):
     print '{id:4s}{name:16s}{gpu:8s}{mem:8s}{temp:16s}{fan:16s}'.format(**m.groupdict())
 
+# try alternate output format (as produced for, e.g., the S1070 server)
+for m in expr2.finditer(nvsmi):
+    m = m.groupdict()
+    m['name'] = re.sub(' Processor', '', m['name'])  # delete ' Processor' in name
+    print '{id:4s}{name:16s}{gpu:8s}{mem:8s}{temp:16s}'.format(**m)

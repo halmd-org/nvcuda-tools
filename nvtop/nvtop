@@ -10,62 +10,34 @@
 # <http://www.gnu.org/licenses/> for details.
 
 from subprocess import Popen, PIPE
-import re
-
-# inspired by http://stackoverflow.com/questions/1361373/match-multiple-patterns-in-a-multiline-string
-expr = re.compile(r'''
-        ^                     # start of any line (with re.MULTILINE enabled)
-        GPU\s(?P<id>[0-9]+):  # literal "GPU" followed by a space and a string of one or more digits
-        .*?                   # next part
-        Product.Name\s*:\s    # "Product Name", some spaces, a colon, and a space
-        (?P<name>[^\n]*)      # match until the end of the line
-        .*?                   # next part
-        Temperature\s*:\s     # "Temperature", some spaces, a colon, and a space
-        (?P<temp>[^\n]*)      # match until the end of the line
-        .*?                   # next part
-        Fan.Speed\s*:\s       # "Fan Speed", some spaces, a colon, and a space
-        (?P<fan>[^\n]*)       # match until the end of the line
-        .*?                   # next part
-        Utilization\s*        # "Utilization" and some spaces (including newline)
-        GPU\s*:\s             # "GPU", some spaces, a colon, and a space
-        (?P<gpu>[^\n]*)       # match until the end of the line
-        \s*                   # some spaces (including newline)
-        Memory\s*:\s          # "Memory", some spaces, a colon, and a space
-        (?P<mem>[^\n]*)       # match until the end of the line
-        ''', re.MULTILINE | re.DOTALL | re.VERBOSE)
-
-expr2 = re.compile(r'''
-        ^\s*                  # start of any line (with re.MULTILINE enabled)
-        GPU\s(?P<id>[0-9]+):  # literal "GPU" followed by a space and a string of one or more digits
-        .*?                   # next part
-        Product.Name\s*:\s    # "Product Name", some spaces, a colon, and a space
-        (?P<name>[^\n]*)      # match until the end of the line
-        .*?                   # next part
-        Temperature\s*:\s     # "Temperature", some spaces, a colon, and a space
-        (?P<temp>[^\n]*)      # match until the end of the line
-        .*?                   # next part
-        Utilization\s*:\s*    # "Utilization:" and some spaces (including newline)
-        GPU\s*:\s             # "GPU", some spaces, a colon, and a space
-        (?P<gpu>[^\n]*)       # match until the end of the line
-        \s*                   # some spaces (including newline)
-        Memory\s*:\s          # "Memory", some spaces, a colon, and a space
-        (?P<mem>[^\n]*)       # match until the end of the line
-        ''', re.MULTILINE | re.DOTALL | re.VERBOSE)
+from xml.etree import ElementTree
+from re import sub
 
 # grab output of nvidia-smi tool
-nvsmi = Popen(['nvidia-smi', '-a'], stdout=PIPE).communicate()[0]
+try:
+    nvsmi = Popen(['nvidia-smi', '-a', '-x'], stdout=PIPE).communicate()[0]
+except:
+    raise SystemExit("Error while reading from nvidia-smi")
+
+# parse XML
+xmlt = ElementTree.XML(nvsmi)
 
 # print header
 print '''\
 ID  Name            Utilization     Temperature     Fan Speed
                     GPU   Memory'''
 
-# parse output and print
-for m in expr.finditer(nvsmi):
-    print '{id:4s}{name:16s}{gpu:8s}{mem:8s}{temp:16s}{fan:16s}'.format(**m.groupdict())
+# retrieve GPU information from XML groups
+for id,gpu in enumerate(xmlt.getiterator(tag="gpu")):
+    info = {}
+    info["id"] = '{0:d}'.format(id)
+    info["name"] = gpu.findtext("prod_name") or gpu.findtext("product_name") or "n/a"
+    info["temp"] = gpu.findtext("temp") or gpu.findtext("temperature/gpu_temp") or ""
+    info["fan"] = gpu.findtext("fan_speed") or ""
+    info["gpu_util"] = gpu.findtext("utilization/gpu_util") or ""
+    info["mem_util"] = gpu.findtext("utilization/memory_util") or ""
 
-# try alternate output format (as produced for, e.g., the S1070 server)
-for m in expr2.finditer(nvsmi):
-    m = m.groupdict()
-    m['name'] = re.sub(' Processor', '', m['name'])  # delete ' Processor' in name
-    print '{id:4s}{name:16s}{gpu:8s}{mem:8s}{temp:16s}'.format(**m)
+    info["name"] = sub(' Processor', '', info["name"]) # simplify name
+
+    # output data in one line
+    print '{id:4s}{name:16s}{gpu_util:8s}{mem_util:8s}{temp:16s}{fan:16s}'.format(**info)

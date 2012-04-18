@@ -129,9 +129,6 @@ CUresult cuCtxPopCurrent(CUcontext *pctx)
 CUresult cuCtxPushCurrent(CUcontext ctx)
 {
     void *handle;
-    CUresult ret;
-    CUdevice dev;
-    char fn[16];
 
     /* open dynamic library and load real function symbol */
     if (!_cuCtxPushCurrent) {

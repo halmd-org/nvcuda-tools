@@ -36,7 +36,7 @@ int cufree(int d)
     size_type free = 0, total = 0;
 
     if (CUDA_SUCCESS != cuDeviceGet(&dev, d)) {
-	fprintf(stderr, "cufree: failed to initialize the CUDA driver API\n", d);
+	fprintf(stderr, "cufree: failed to get CUDA device %d\n", d);
 	return 1;
     }
     /* create CUDA context for device */
@@ -62,11 +62,11 @@ int main(int argc, char** argv)
     int count, d, err;
 
     if (CUDA_SUCCESS != cuInit(0)) {
-	fprintf(stderr, "cufree: failed to initialize the CUDA driver API\n", d);
+	fprintf(stderr, "cufree: failed to initialize the CUDA driver API\n");
 	return 1;
     }
     if (CUDA_SUCCESS != cuDeviceGetCount(&count)) {
-	fprintf(stderr, "cufree: failed to initialize the CUDA driver API\n", d);
+	fprintf(stderr, "cufree: failed to initialize the CUDA driver API\n");
 	return 1;
     }
     printf("             total       used       free\n");

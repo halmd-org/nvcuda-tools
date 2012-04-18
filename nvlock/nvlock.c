@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/file.h>
+#include <unistd.h>
 
 /* http://gcc.gnu.org/onlinedocs/cpp/Stringification.html */
 #define xstr(s) str(s)

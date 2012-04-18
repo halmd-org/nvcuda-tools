@@ -11,7 +11,7 @@ endif()
 
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
   if(CMAKE_C_FLAGS STREQUAL "${CMAKE_C_FLAGS_INIT}")
-    set(CMAKE_C_FLAGS "-Wall -ansi" CACHE STRING
+    set(CMAKE_C_FLAGS "-Wall -std=c99" CACHE STRING
       "Flags used by the compiler during all build types." FORCE)
   endif()
 endif()

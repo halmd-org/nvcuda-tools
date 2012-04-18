@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <sys/file.h>
 
-// http://gcc.gnu.org/onlinedocs/cpp/Stringification.html
+/* http://gcc.gnu.org/onlinedocs/cpp/Stringification.html */
 #define xstr(s) str(s)
 #define str(s) #s
 
@@ -43,14 +43,14 @@ CUresult cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev)
     char *env, *endptr;
     long int val;
 
-    // open dynamic library and load real function symbol
+    /* open dynamic library and load real function symbol */
     if (!_cuCtxCreate) {
         handle = dlopen("libcuda.so", RTLD_GLOBAL | RTLD_NOW);
         if (!handle) {
             LOG_ERROR("failed to load libcuda.so");
             return CUDA_ERROR_UNKNOWN;
         }
-        // stringify: CUDA >= 3.2 defines part of its API with macros
+        /* stringify: CUDA >= 3.2 defines part of its API with macros */
         _cuCtxCreate = dlsym(handle, xstr(cuCtxCreate));
         if (!_cuCtxCreate) {
             LOG_ERROR("failed to load symbol " xstr(cuCtxCreate));
@@ -62,7 +62,7 @@ CUresult cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev)
         }
     }
 
-    // if environment variable CUDA_DEVICE is set, use integer value as allowed device
+    /* if environment variable CUDA_DEVICE is set, use integer value as allowed device */
     env = getenv("CUDA_DEVICE");
     if (NULL != env && '\0' != *env) {
         val = strtol(env, &endptr, 10);
@@ -75,7 +75,7 @@ CUresult cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev)
         }
     }
 
-    // lock NVIDIA device file with non-blocking request
+    /* lock NVIDIA device file with non-blocking request */
     snprintf(fn, sizeof(fn), NVIDIA_DEVICE_FILENAME, dev);
     if (-1 != fd) {
         close(fd);
@@ -91,7 +91,7 @@ CUresult cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev)
         return CUDA_ERROR_UNKNOWN;
     }
 
-    // create CUDA context
+    /* create CUDA context */
     return _cuCtxCreate(pctx, flags, dev);
 }
 
@@ -99,14 +99,14 @@ CUresult cuCtxPopCurrent(CUcontext *pctx)
 {
     void *handle;
 
-    // open dynamic library and load real function symbol
+    /* open dynamic library and load real function symbol */
     if (!_cuCtxPopCurrent) {
         handle = dlopen("libcuda.so", RTLD_GLOBAL | RTLD_NOW);
         if (!handle) {
             LOG_ERROR("failed to load libcuda.so");
             return CUDA_ERROR_UNKNOWN;
         }
-        // stringify: CUDA >= 3.2 defines part of its API with macros
+        /* stringify: CUDA >= 3.2 defines part of its API with macros */
         _cuCtxPopCurrent = dlsym(handle, xstr(cuCtxPopCurrent));
         if (!_cuCtxPopCurrent) {
             LOG_ERROR("failed to load symbol " xstr(cuCtxPopCurrent));
@@ -118,10 +118,10 @@ CUresult cuCtxPopCurrent(CUcontext *pctx)
         }
     }
 
-    // unlock the device file
+    /* unlock the device file */
     flock(fd, LOCK_UN);
 
-    // pop current context from CUDA context stack
+    /* pop current context from CUDA context stack */
     return _cuCtxPopCurrent(pctx);
 }
 
@@ -132,14 +132,14 @@ CUresult cuCtxPushCurrent(CUcontext ctx)
     CUdevice dev;
     char fn[16];
 
-    // open dynamic library and load real function symbol
+    /* open dynamic library and load real function symbol */
     if (!_cuCtxPushCurrent) {
         handle = dlopen("libcuda.so", RTLD_GLOBAL | RTLD_NOW);
         if (!handle) {
             LOG_ERROR("failed to load libcuda.so");
             return CUDA_ERROR_UNKNOWN;
         }
-        // stringify: CUDA >= 3.2 defines part of its API with macros
+        /* stringify: CUDA >= 3.2 defines part of its API with macros */
         _cuCtxPushCurrent = dlsym(handle, xstr(cuCtxPushCurrent));
         if (!_cuCtxPushCurrent) {
             LOG_ERROR("failed to load symbol " xstr(cuCtxPopCurrent));
@@ -151,9 +151,9 @@ CUresult cuCtxPushCurrent(CUcontext ctx)
         }
     }
 
-    // lock the device file with blocking request
+    /* lock the device file with blocking request */
     flock(fd, LOCK_EX);
 
-    // push floating context onto CUDA context stack
+    /* push floating context onto CUDA context stack */
     return _cuCtxPushCurrent(ctx);
 }

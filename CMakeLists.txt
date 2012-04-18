@@ -9,6 +9,13 @@ if(CMAKE_BUILD_TYPE STREQUAL "${CMAKE_BUILD_TYPE_INIT}")
     "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif()
 
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+  if(CMAKE_C_FLAGS STREQUAL "${CMAKE_C_FLAGS_INIT}")
+    set(CMAKE_C_FLAGS "-Wall -ansi" CACHE STRING
+      "Flags used by the compiler during all build types." FORCE)
+  endif()
+endif()
+
 if(CMAKE_C_PLATFORM_ID STREQUAL "Linux")
   if(CMAKE_EXE_LINKER_FLAGS_RELEASE STREQUAL "${CMAKE_EXE_LINKER_FLAGS_RELEASE_INIT}")
     set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-Wl,-s" CACHE STRING

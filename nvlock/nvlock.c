@@ -1,7 +1,7 @@
 /*
  * nvlock - Exclusively lock an unused NVIDIA device
  *
- * Copyright © 2008-2009  Peter Colberg
+ * Copyright © 2008-2012  Peter Colberg
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,6 +40,8 @@ CUresult cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev)
 {
     void *handle;
     char fn[16];
+    char *env, *endptr;
+    long int val;
 
     // open dynamic library and load real function symbol
     if (!_cuCtxCreate) {
@@ -56,6 +58,19 @@ CUresult cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev)
         }
         if (dlclose(handle)) {
             LOG_ERROR("failed to unload libcuda.so");
+            return CUDA_ERROR_UNKNOWN;
+        }
+    }
+
+    // if environment variable CUDA_DEVICE is set, use integer value as allowed device
+    env = getenv("CUDA_DEVICE");
+    if (NULL != env && '\0' != *env) {
+        val = strtol(env, &endptr, 10);
+        if ('\0' != *endptr || val < 0) {
+            LOG_ERROR("invalid environment variable CUDA_DEVICE: %s", env);
+            return CUDA_ERROR_UNKNOWN;
+        }
+        if (val != dev) {
             return CUDA_ERROR_UNKNOWN;
         }
     }

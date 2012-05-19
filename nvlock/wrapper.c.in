@@ -1,0 +1,137 @@
+/*
+ * nvlock - Exclusively lock an unused NVIDIA device and execute given program
+ *
+ * Copyright © 2008, 2009, 2012 Peter Colberg
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/** enable realpath(3) */
+#define _BSD_SOURCE
+
+#include <libgen.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+/* path to nvlock library relative to current directory */
+#ifndef NVLOCK_LIBRARY_CURPATH
+# define NVLOCK_LIBRARY_CURPATH "/libcuda.so"
+#endif
+/* path to nvlock library relative to executable directory */
+#ifndef NVLOCK_LIBRARY_RELPATH
+# define NVLOCK_LIBRARY_RELPATH "/../lib/nvlock" NVLOCK_LIBRARY_CURPATH
+#endif
+/* absolute path to nvlock library */
+#ifndef NVLOCK_LIBRARY_ABSPATH
+# define NVLOCK_LIBRARY_ABSPATH "@CMAKE_INSTALL_PREFIX@/lib/nvlock" NVLOCK_LIBRARY_CURPATH
+#endif
+
+/* print error message to stderr */
+#define LOG_ERROR(fmt, args...) fprintf(stderr, "nvlock:%d: " fmt "\n", __LINE__, ## args)
+
+int main(int argc, char** argv)
+{
+    char *dir;
+    char *dname;
+    char *path;
+    char *relpath;
+    char *rpath;
+
+    /* determine path to nvlock library */
+    dir = strdup(argv[0]);
+    if (dir == NULL) {
+        LOG_ERROR("failed to allocate memory");
+        return 1;
+    }
+    dname = dirname(dir);
+    path = malloc(strlen(dname) + strlen(NVLOCK_LIBRARY_CURPATH) + 1);
+    if (path == NULL) {
+        LOG_ERROR("failed to allocate memory");
+        free(dir);
+        return 1;
+    }
+    strcpy(path, dname);
+    strcat(path, NVLOCK_LIBRARY_CURPATH);
+    rpath = realpath(path, NULL);
+    if (rpath == NULL) {
+        relpath = malloc(strlen(dname) + strlen(NVLOCK_LIBRARY_RELPATH) + 1);
+        if (relpath == NULL) {
+            LOG_ERROR("failed to allocate memory");
+            free(path);
+            free(dir);
+            return 1;
+        }
+        strcpy(relpath, dname);
+        strcat(relpath, NVLOCK_LIBRARY_RELPATH);
+        rpath = realpath(relpath, NULL);
+        if (rpath == NULL) {
+            rpath = realpath(NVLOCK_LIBRARY_ABSPATH, NULL);
+            if (rpath == NULL) {
+                LOG_ERROR("failed to find nvlock library\n"
+                          "\tno file '%s'\n"
+                          "\tno file '%s'\n"
+                          "\tno file '%s'",
+                          path, relpath, NVLOCK_LIBRARY_ABSPATH);
+                free(relpath);
+                free(path);
+                free(dir);
+                return 1;
+            }
+        }
+        free(relpath);
+    }
+    free(path);
+    free(dir);
+    dname = dirname(rpath);
+    /* prepend path to nvlock library to LD_LIBRARY_PATH for dlopen() */
+    path = getenv("LD_LIBRARY_PATH");
+    if (path == NULL || strlen(path) == 0) {
+        if (-1 == setenv("LD_LIBRARY_PATH", dname, 1)) {
+            LOG_ERROR("failed to set LD_LIBRARY_PATH environment variable");
+            free(rpath);
+            return 1;
+        }
+    }
+    else {
+        dir = malloc(strlen(dname) + 1 + strlen(path) + 1);
+        if (dir == NULL) {
+            LOG_ERROR("failed to allocate memory");
+            free(rpath);
+            return 1;
+        }
+        strcpy(dir, dname);
+        strcat(dir, ":");
+        strcat(dir, path);
+        if (-1 == setenv("LD_LIBRARY_PATH", dir, 1)) {
+            LOG_ERROR("failed to set LD_LIBRARY_PATH environment variable");
+            free(dir);
+            free(rpath);
+            return 1;
+        }
+        free(dir);
+    }
+    free(rpath);
+    /* execute program */
+    if (argc < 2) {
+	LOG_ERROR("usage: nvlock <command>");
+	return 1;
+    }
+    if (-1 == execvp(argv[1], &argv[1])) {
+	LOG_ERROR("failed to execute process: %s", argv[1]);
+	return 1;
+    }
+    return 0;
+}

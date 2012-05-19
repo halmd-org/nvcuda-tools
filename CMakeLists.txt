@@ -34,7 +34,6 @@ endif()
 include_directories(
   ${CUDA_INCLUDE_DIR}
 )
-add_subdirectory(cufree)
 add_subdirectory(nvlock)
 add_subdirectory(nvcuda-occupancy)
 add_subdirectory(nvtop)

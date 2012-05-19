@@ -2,7 +2,7 @@ project(nvcuda-tools C)
 
 cmake_minimum_required(VERSION 2.6)
 
-find_package(CUDA QUIET REQUIRED)
+find_package(CUDA QUIET REQUIRED COMPONENTS cuda)
 
 if(CMAKE_BUILD_TYPE STREQUAL "${CMAKE_BUILD_TYPE_INIT}")
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING

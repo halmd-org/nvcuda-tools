@@ -2,7 +2,7 @@ add_library(nvlock SHARED
   nvlock.c
 )
 target_link_libraries(nvlock
-  ${CUDA_LIBRARY}
+  ${CUDA_LIBRARIES}
   dl
 )
 set_target_properties(nvlock PROPERTIES

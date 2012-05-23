@@ -289,6 +289,7 @@ CUresult CUDAAPI cuCtxDetach(CUcontext ctx)
     CUresult (*cuCtxDetach)(CUcontext);
     CUresult result;
 
+    LOG_DEBUG("cuCtxDetach(%p)", ctx);
     cuCtxDetach = dlsym(RTLD_NEXT, xstr(cuCtxDetach));
     if (cuCtxDetach == NULL) {
         LOG_ERROR("failed to resolve symbol " xstr(cuCtxDetach));
@@ -298,7 +299,6 @@ CUresult CUDAAPI cuCtxDetach(CUcontext ctx)
     if (result != CUDA_SUCCESS) {
         return result;
     }
-    LOG_DEBUG("cuCtxDetach(%p)", ctx);
     assert(use > 0);
     --use;
     if (use == 0) {

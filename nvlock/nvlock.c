@@ -186,9 +186,31 @@ CUresult CUDAAPI cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev)
     return CUDA_SUCCESS;
 }
 
+CUresult CUDAAPI cuCtxDestroy(CUcontext ctx)
+{
+    CUresult (*cuCtxDestroy)(CUcontext);
+    CUresult result;
+
+    LOG_DEBUG("cuCtxDestroy(%p)", ctx);
+    cuCtxDestroy = dlsym(RTLD_NEXT, xstr(cuCtxDestroy));
+    if (cuCtxDestroy == NULL) {
+        LOG_ERROR("failed to resolve symbol " xstr(cuCtxDestroy));
+        return CUDA_ERROR_UNKNOWN;
+    }
+    result = cuCtxDestroy(ctx);
+    if (result != CUDA_SUCCESS) {
+        return result;
+    }
+    assert(use > 0);
+    use = 0;
+    unlock_device();
+    return result;
+}
+
 #if CUDA_VERSION >= 3020
 
 # undef cuCtxCreate
+# undef cuCtxDestroy
 
 CUresult CUDAAPI cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev)
 {
@@ -213,6 +235,27 @@ CUresult CUDAAPI cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev)
     assert(use == 0);
     ++use;
     return CUDA_SUCCESS;
+}
+
+CUresult CUDAAPI cuCtxDestroy(CUcontext ctx)
+{
+    CUresult (*cuCtxDestroy)(CUcontext);
+    CUresult result;
+
+    LOG_DEBUG("cuCtxDestroy(%p)", ctx);
+    cuCtxDestroy = dlsym(RTLD_NEXT, xstr(cuCtxDestroy));
+    if (cuCtxDestroy == NULL) {
+        LOG_ERROR("failed to resolve symbol " xstr(cuCtxDestroy));
+        return CUDA_ERROR_UNKNOWN;
+    }
+    result = cuCtxDestroy(ctx);
+    if (result != CUDA_SUCCESS) {
+        return result;
+    }
+    assert(use > 0);
+    use = 0;
+    unlock_device();
+    return result;
 }
 
 #endif /* CUDA_VERSION >= 3020 */

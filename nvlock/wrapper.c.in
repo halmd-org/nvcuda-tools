@@ -26,9 +26,13 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+/* filename of nvlock library */
+#ifndef NVLOCK_LIBRARY
+# define NVLOCK_LIBRARY "libcuda.so"
+#endif
 /* path to nvlock library relative to current directory */
 #ifndef NVLOCK_LIBRARY_CURPATH
-# define NVLOCK_LIBRARY_CURPATH "/libcuda.so"
+# define NVLOCK_LIBRARY_CURPATH "/" NVLOCK_LIBRARY
 #endif
 /* path to nvlock library relative to executable directory */
 #ifndef NVLOCK_LIBRARY_RELPATH
@@ -124,6 +128,30 @@ int main(int argc, char** argv)
         free(dir);
     }
     free(rpath);
+    /* prepend path to nvlock library to LD_PRELOAD for programs linking against libcuda.so.* */
+    path = getenv("LD_PRELOAD");
+    if (path == NULL || strlen(path) == 0) {
+        if (-1 == setenv("LD_PRELOAD", NVLOCK_LIBRARY, 1)) {
+            LOG_ERROR("failed to set LD_PRELOAD environment variable");
+            return 1;
+        }
+    }
+    else {
+        dir = malloc(strlen(NVLOCK_LIBRARY) + 1 + strlen(path) + 1);
+        if (dir == NULL) {
+            LOG_ERROR("failed to allocate memory");
+            return 1;
+        }
+        strcpy(dir, NVLOCK_LIBRARY);
+        strcat(dir, " ");
+        strcat(dir, path);
+        if (-1 == setenv("LD_PRELOAD", dir, 1)) {
+            LOG_ERROR("failed to set LD_PRELOAD environment variable");
+            free(dir);
+            return 1;
+        }
+        free(dir);
+    }
     /* execute program */
     if (argc < 2) {
 	LOG_ERROR("usage: nvlock <command>");

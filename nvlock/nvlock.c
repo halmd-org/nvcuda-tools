@@ -56,8 +56,10 @@
 # define LOG_DEBUG(fmt, args...) fprintf(stderr, "nvlock: " fmt "\n", ## args)
 #endif
 
+/* file descriptor of uninitialised lock file */
+static int const uninitialised = -1;
 /* file descriptor of lock on nvidia device */
-static int fd = -1;
+static int lockfile = -1;
 /* usage count of current CUDA context */
 static int use = 0;
 
@@ -84,16 +86,16 @@ static CUresult lock_device(CUdevice dev)
 
     /* lock NVIDIA device file with non-blocking request */
     snprintf(fn, sizeof(fn), NVLOCK_DEVICE_PATH, dev);
-    assert(fd == -1);
-    fd = open(fn, O_RDWR);
-    if (fd == -1) {
+    assert(lockfile == uninitialised);
+    lockfile = open(fn, O_RDWR);
+    if (lockfile == -1) {
         LOG_ERROR("failed to open CUDA device in read-write mode: %s", fn);
         return CUDA_ERROR_UNKNOWN;
     }
-    result = flock(fd, LOCK_EX | LOCK_NB);
+    result = flock(lockfile, LOCK_EX | LOCK_NB);
     if (result == -1) {
-        close(fd);
-        fd = -1;
+        close(lockfile);
+        lockfile = uninitialised;
         return CUDA_ERROR_UNKNOWN;
     }
     LOG_DEBUG("lock device %i", dev);
@@ -104,9 +106,9 @@ static CUresult lock_device(CUdevice dev)
 static void unlock_device()
 {
     LOG_DEBUG("unlock device");
-    assert(fd != -1);
-    close(fd);
-    fd = -1;
+    assert(lockfile != uninitialised);
+    close(lockfile);
+    lockfile = uninitialised;
 }
 
 #if CUDA_VERSION >= 4000

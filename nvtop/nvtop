@@ -3,7 +3,7 @@
 #
 # reformat output of the nvidia-smi tool
 #
-# Copyright © 2011   Felix Höfling
+# Copyright © 2011-2013  Felix Höfling
 #
 # This tool is free software and released under the terms of
 # the GNU General Public License Version 3, please refer to
@@ -24,8 +24,9 @@ xmlt = ElementTree.XML(nvsmi)
 
 # print header
 print '''\
-ID  Name            Utilization     Temperature     Fan Speed
-                    GPU   Memory'''
+ID  Name            Utilization    Temp   Fan    Processes
+                    GPU   Memory                 ID      Memory   Name\
+'''
 
 # retrieve GPU information from XML groups
 for id,gpu in enumerate(xmlt.getiterator(tag="gpu")):
@@ -39,5 +40,15 @@ for id,gpu in enumerate(xmlt.getiterator(tag="gpu")):
 
     info["name"] = sub(' Processor', '', info["name"]) # simplify name
 
+    info["proc"] = ""
+    compute = gpu.find("compute_processes")
+    for i,proc in compute and enumerate(compute.getiterator(tag="process_info")) or ():
+        pid = proc.findtext("pid")
+        mem = proc.findtext("used_memory")
+        name = proc.findtext("process_name")
+        if i > 0:
+            info["proc"] += '\n{0:49}'.format("")
+        info["proc"] += '{0:8s}{1:>7s}  {2:16s}'.format(pid, mem, name)
+
     # output data in one line
-    print '{id:4s}{name:16s}{gpu_util:8s}{mem_util:8s}{temp:16s}{fan:16s}'.format(**info)
+    print '{id:4s}{name:16s}{gpu_util:>4s}   {mem_util:>4s}    {temp:7s}{fan:7s}{proc:s}'.format(**info)

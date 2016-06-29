@@ -42,6 +42,8 @@ for id,gpu in enumerate(xmlt.getiterator(tag="gpu")):
 
     info["proc"] = ""
     compute = gpu.find("processes")
+    if compute is None:
+        compute = gpu.find("compute_processes")
     if compute is not None:
         first_line = True
         for proc in compute.getiterator(tag="process_info"):

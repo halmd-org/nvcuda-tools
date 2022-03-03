@@ -23,16 +23,16 @@ def main():
     specs = tools.DeviceData(dev)
 
     if args.verbose:
-        print 'CUDA device: %s\n' % dev.name()
-        print 'Specifications:'
-        print '  Maximum number of blocks per multiprocessor: %d' % specs.thread_blocks_per_mp
-        print '  Maximum number of threads per block: %d' % specs.max_threads
-        print '  Warp size: %d' % specs.warp_size
-        print '  Active warps per multiprocessor: %d' % specs.warps_per_mp
-        print '  Number of registers: %d' % specs.registers
-        print '  Shared memory: %d bytes' % specs.shared_memory
-        print '  Granularity of shared memory: %d threads' % specs.smem_granularity
-        print
+        print('CUDA device: %s\n' % dev.name())
+        print('Specifications:')
+        print('  Maximum number of blocks per multiprocessor: %d' % specs.thread_blocks_per_mp)
+        print('  Maximum number of threads per block: %d' % specs.max_threads)
+        print('  Warp size: %d' % specs.warp_size)
+        print('  Active warps per multiprocessor: %d' % specs.warps_per_mp)
+        print('  Number of registers: %d' % specs.registers)
+        print('  Shared memory: %d bytes' % specs.shared_memory)
+        print('  Granularity of shared memory: %d threads' % specs.smem_granularity)
+        print()
 
     if args.threads > specs.max_threads:
         raise SystemExit('Thread count per block (%d) exceeds maximum value (%d).' \
@@ -46,15 +46,15 @@ def main():
         raise SystemExit('Shared memory usage (%d bytes) exceeds maximum value (%d bytes).' \
                          % (args.smem, specs.shared_memory))
 
-    print 'Analyse kernel of %d threads' % args.threads
-    print 'shared memory usage: %d bytes' % args.smem
-    print 'register usage: %d' % args.registers
-    print
+    print('Analyse kernel of %d threads' % args.threads)
+    print('shared memory usage: %d bytes' % args.smem)
+    print('register usage: %d' % args.registers)
+    print()
 
     occupancy = tools.OccupancyRecord(specs, args.threads, args.smem, args.registers)
-    print 'Active blocks per multiprocessor: %d' % occupancy.tb_per_mp
-    print 'Active warps per multiprocessor: %d' % occupancy.warps_per_mp
-    print 'Occupancy of multiprocessor: %g' % occupancy.occupancy
+    print('Active blocks per multiprocessor: %d' % occupancy.tb_per_mp)
+    print('Active warps per multiprocessor: %d' % occupancy.warps_per_mp)
+    print('Occupancy of multiprocessor: %g' % occupancy.occupancy)
     if occupancy.occupancy < 1:
         reason = {
             'device': 'size of device'
@@ -62,25 +62,25 @@ def main():
           , 'regs': 'number of registers'
           , 'smem': 'size of shared memory'
         }
-        print '\nLimitation: %s' % reason[occupancy.limited_by]
+        print('\nLimitation: %s' % reason[occupancy.limited_by])
 
         if args.hint:
             if occupancy.limited_by == 'device':
-                print 'Hint: increase the number of threads per block'
+                print('Hint: increase the number of threads per block')
 
             if occupancy.limited_by == 'warps':
                 # the number of warps per block should be a power of 2'
                 warps_per_tb = pow(2, floor(log(args.threads / specs.warp_size, 2)))
                 threads = warps_per_tb * specs.warp_size
-                print 'Hint: decrease the number of threads per block to %d' % threads
+                print('Hint: decrease the number of threads per block to %d' % threads)
 
             if occupancy.limited_by == 'regs':
                 regs = specs.registers / (specs.warps_per_mp * specs.warp_size)
-                print 'Hint: reduce register usage to %d' % regs
+                print('Hint: reduce register usage to %d' % regs)
 
             if occupancy.limited_by == 'smem':
                 smem = specs.shared_memory / (specs.thread_blocks_per_mp)
-                print 'Hint: reduce shared memory usage to %d bytes' % smem
+                print('Hint: reduce shared memory usage to %d bytes' % smem)
 
 def parse_args():
     parser = argparse.ArgumentParser(prog='nvcuda-occupancy')

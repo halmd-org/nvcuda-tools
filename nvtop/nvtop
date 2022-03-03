@@ -36,10 +36,10 @@ max_len += 1
 max_len = ((max_len + 3) / 4) * 4
 
 # print header
-print '''\
+print('''\
 ID  Name{0:s}Utilization     Temp    Fan     Processes
         {0:s}GPU   Memory                    ID      Memory    Name\
-'''.format(" " * (max_len - len("Name")))
+'''.format(" " * (max_len - len("Name"))))
 
 # retrieve GPU information from XML groups
 for id,gpu in enumerate(xmlt.getiterator(tag="gpu")):
@@ -79,4 +79,4 @@ for id,gpu in enumerate(xmlt.getiterator(tag="gpu")):
         info["proc"] = '{0:8s}{1:>8s}'.format("N/A", mem)
 
     # output data in one line
-    print '{id:4s}{name:s}{gpu_util:^5s} {mem_util:^5s}     {temp:8s}{fan:8s}{proc:s}'.format(**info)
+    print('{id:4s}{name:s}{gpu_util:^5s} {mem_util:^5s}     {temp:8s}{fan:8s}{proc:s}'.format(**info))
